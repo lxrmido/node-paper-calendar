@@ -1,0 +1,26 @@
+{
+  "name": "paper-calendar",
+  "version": "1.0.0",
+  "description": "一个提供黑白色天气日历图片服务的node程序，用于制作树莓派墨水屏日历",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lxrmido/node-paper-calendar.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lxrmido/node-paper-calendar/issues"
+  },
+  "homepage": "https://github.com/lxrmido/node-paper-calendar",
+  "dependencies": {
+    "canvas": "^2.6.0",
+    "dotenv": "^8.0.0",
+    "express": "^4.17.1",
+    "request": "^2.88.0",
+    "solarlunar": "^2.0.7"
+  }
+}
