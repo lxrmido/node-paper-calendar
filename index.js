@@ -213,7 +213,7 @@ function drawCalendar(width, height){
     let monthWidth = Math.floor(lunarWidth / 2);
     let monthHeight = Math.floor(lunarHeight / 2);
     let monthText = date.getFullYear() + '年' + (date.getMonth() + 1) + '月';
-    let monthFont = ctx.getPropertySingleLineFont(monthText, 100, 12, null, monthWidth - 16, monthHeight - 16);
+    let monthFont = ctx.getPropertySingleLineFont(monthText, 100, 12, null, monthWidth, monthHeight);
     ctx.font = monthFont.font;
     ctx.fillText(monthText, Math.floor(monthX + monthWidth / 2), Math.floor(monthY + monthHeight / 2 + monthFont.offsetY));
 
@@ -222,7 +222,7 @@ function drawCalendar(width, height){
     let weekWidth = Math.floor(lunarWidth / 2);
     let weekHeight = Math.floor(lunarHeight / 2);
     let weekText = lunarInfo.ncWeek;
-    let weekFont = ctx.getPropertySingleLineFont(weekText, 100, 12, null, weekWidth - 16, weekHeight - 16);
+    let weekFont = ctx.getPropertySingleLineFont(weekText, 100, 12, null, weekWidth, weekHeight);
     ctx.font = weekFont.font;
     ctx.fillRect(weekX, weekY, weekWidth, weekHeight);
     ctx.fillStyle = '#ffffff';
@@ -327,7 +327,7 @@ function drawWeatherForecast(width, height){
     ctx.textAlign = 'center'; 
     ctx.textBaseline = 'middle';
 
-    let labelFont = ctx.getPropertySingleLineFont('今天', null, null, null, labelWidth - 16, labelHeight - 16);
+    let labelFont = ctx.getPropertySingleLineFont('今天', null, null, null, labelWidth, labelHeight);
 
     ctx.fillRect(0, 0, labelWidth, labelHeight);
     ctx.fillRect(0, rowHeight, labelWidth, labelHeight);
