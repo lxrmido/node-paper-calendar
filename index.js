@@ -6,6 +6,7 @@ var app = express();
 var canvas = require('canvas');
 var solarLunar = require('solarlunar');
 var request = require('request')
+var bmp = require('fast-bmp');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -126,10 +127,11 @@ app.get('/changes/:key', function (req, res) {
 });
 
 app.get('/calendar', function (req, res) {
-    let width  = 600;
+    let width  = 640;
     let height = 384;
     let redLayer = req.query.red && parseInt(req.query.red) > 0;
     let blackLayer = req.query.black && parseInt(req.query.black) > 0;
+    let bit = req.query.bit && parseInt(req.query.bit) > 0;
     if (req.query.width && req.query.width > 0) {
         width = parseInt(req.query.width);
     }
@@ -157,10 +159,18 @@ app.get('/calendar', function (req, res) {
         ctx.drawImage(cvsForecast, 0, 0);
     }
     
+    var mime, img;
 
-    let img = cvs.toBuffer('image/jpeg', {quality: 1});
+    if (bit) {
+        mime = 'image/bmp',
+        img = canvasToBitmap(cvs);
+    } else {
+        mime = 'image/jpeg'
+        img = cvs.toBuffer('image/jpeg', {quality: 1});
+    }
+
     res.writeHead(200, {
-        'Content-Type': 'image/jpeg',
+        'Content-Type': mime,
         'Content-Length': img.length
     });
     res.end(img); 
@@ -537,6 +547,41 @@ function reportTemp () {
         addChange(config.tempKey);
     });
     setTimeout(reportTemp, 10000);
+}
+
+function canvasToBitmap(cvs){
+    let buffer = cvs.toBuffer('raw');
+    let offset = 0;
+    let data = [];
+    var b1, b2, b3, b4, b5, b6, b7, b8;
+    while (offset < buffer.length) {
+        b1 = buffer[offset] + buffer[offset + 1] + buffer[offset + 2] < 510 ? 0b00000000 : 0b10000000;
+        offset += 4;
+        b2 = buffer[offset] + buffer[offset + 1] + buffer[offset + 2] < 510 ? 0b00000000 : 0b01000000;
+        offset += 4;
+        b3 = buffer[offset] + buffer[offset + 1] + buffer[offset + 2] < 510 ? 0b00000000 : 0b00100000;
+        offset += 4;
+        b4 = buffer[offset] + buffer[offset + 1] + buffer[offset + 2] < 510 ? 0b00000000 : 0b00010000;
+        offset += 4;
+        b5 = buffer[offset] + buffer[offset + 1] + buffer[offset + 2] < 510 ? 0b00000000 : 0b00001000;
+        offset += 4;
+        b6 = buffer[offset] + buffer[offset + 1] + buffer[offset + 2] < 510 ? 0b00000000 : 0b00000100;
+        offset += 4;
+        b7 = buffer[offset] + buffer[offset + 1] + buffer[offset + 2] < 510 ? 0b00000000 : 0b00000010;
+        offset += 4;
+        b8 = buffer[offset] + buffer[offset + 1] + buffer[offset + 2] < 510 ? 0b00000000 : 0b00000001;
+        offset += 4;
+        data.push(b1 | b2 | b3 | b4 | b5 | b6 | b7 | b8);
+    }
+
+    return bmp.encode({
+        width: cvs.width,
+        height: cvs.height,
+        data: new Uint8Array(data),
+        bitDepth: 1,
+        components: 1,
+        channels: 1
+    })
 }
 
 setTimeout(quickBackup, config.backupInterval);
