@@ -129,14 +129,18 @@ app.get('/changes/:key', function (req, res) {
 app.get('/calendar', function (req, res) {
     let width  = 640;
     let height = 384;
-    let redLayer = req.query.red && parseInt(req.query.red) > 0;
-    let blackLayer = req.query.black && parseInt(req.query.black) > 0;
+    let hideWeather = req.query.hideWeather && parseInt(req.query.hideWeather) > 0;
+    let hideTemp = req.query.hideTemp && parseInt(req.query.hideTemp) > 0;
     let bit = req.query.bit && parseInt(req.query.bit) > 0;
     if (req.query.width && req.query.width > 0) {
         width = parseInt(req.query.width);
     }
     if (req.query.height && req.query.height > 0) {
         height = parseInt(req.query.height);
+    }
+    let tempKey = config.tempKey;
+    if (req.query.tempKey) {
+        tempKey = req.query.tempKey;
     }
     
     let cvs = canvas.createCanvas(width, height);
@@ -145,18 +149,44 @@ app.get('/calendar', function (req, res) {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, width, height);
 
-    if (!blackLayer) {
-        let cvsCalendar = drawCalendar(Math.floor(width / 3 * 2), Math.floor(height / 4 * 3));
-        ctx.drawImage(cvsCalendar, Math.floor(width / 3), 0);
+    let calendarWidth = Math.floor(width / 3 * 2);
+    let calendarHeight = Math.floor(height / 4 * 3);
+    let calendarX = Math.floor(width / 3);
+    let calendarY = 0;
+
+    let tempWidth = width;
+    let tempHeight = Math.floor(height / 4);
+    let tempX = 0;
+    let tempY = Math.floor(height / 4 * 3);
+
+    let weatherWidth = Math.floor(width / 3);
+    let weatherHeight = Math.floor(height / 4 * 3);
+    let weatherX = 0;
+    let weatherY = 0;
+
+
+    if (hideTemp) {
+        calendarHeight = height;
+        weatherHeight = height;
     }
-    
-    if (!redLayer) {
-        let cvsTemps = drawChanges(width, Math.floor(height / 4), config.tempKey, function (cur, min, max) {
+    if (hideWeather) {
+        calendarWidth = width;
+        calendarX = 0;
+    }
+
+    let cvsCalendar = drawCalendar(calendarWidth, calendarHeight);
+    ctx.drawImage(cvsCalendar, calendarX, calendarY);
+
+    if (!hideTemp) {
+        let cvsTemps = drawChanges(tempWidth, tempHeight, tempKey, function (cur, min, max) {
             return '温度：' + (cur / 1000).toFixed(1) + '℃，过去24小时：' + (min / 1000).toFixed(1) + ' - ' + (max / 1000).toFixed(1) + '℃';
         });
-        let cvsForecast = drawWeatherForecast(width / 3, height / 4 * 3);
-        ctx.drawImage(cvsTemps, 0, Math.floor(height / 4 * 3));
-        ctx.drawImage(cvsForecast, 0, 0);
+        ctx.drawImage(cvsTemps, tempX, tempY);
+    }
+    
+    if (!hideWeather) {
+        let cvsForecast = drawWeatherForecast(weatherWidth, weatherHeight);
+        ctx.drawImage(cvsForecast, weatherX, weatherY);
     }
     
     var mime, img;
@@ -204,7 +234,7 @@ function drawCalendar(width, height){
     let lunarHeight = Math.floor(height / 4);
     let lunarInfo = solarLunar.solar2lunar(date.getFullYear(), date.getMonth() + 1, date.getDate());
     let lunarText = lunarInfo.monthCn + lunarInfo.dayCn;
-    let lunarFont = ctx.getPropertySingleLineFont(lunarText, 100, 12, null, lunarWidth - 16, lunarHeight - 16);
+    let lunarFont = ctx.getPropertySingleLineFont(lunarText, 100, null, null, lunarWidth - 16, lunarHeight - 16);
     ctx.font = lunarFont.font;
     ctx.fillText(lunarText, Math.floor(lunarX + lunarWidth / 2), Math.floor(lunarY + lunarHeight / 2 + lunarFont.offsetY));
 
@@ -213,7 +243,7 @@ function drawCalendar(width, height){
     let monthWidth = Math.floor(lunarWidth / 2);
     let monthHeight = Math.floor(lunarHeight / 2);
     let monthText = date.getFullYear() + '年' + (date.getMonth() + 1) + '月';
-    let monthFont = ctx.getPropertySingleLineFont(monthText, 100, 12, null, monthWidth, monthHeight);
+    let monthFont = ctx.getPropertySingleLineFont(monthText, 100, null, null, monthWidth, monthHeight);
     ctx.font = monthFont.font;
     ctx.fillText(monthText, Math.floor(monthX + monthWidth / 2), Math.floor(monthY + monthHeight / 2 + monthFont.offsetY));
 
@@ -222,7 +252,7 @@ function drawCalendar(width, height){
     let weekWidth = Math.floor(lunarWidth / 2);
     let weekHeight = Math.floor(lunarHeight / 2);
     let weekText = lunarInfo.ncWeek;
-    let weekFont = ctx.getPropertySingleLineFont(weekText, 100, 12, null, weekWidth, weekHeight);
+    let weekFont = ctx.getPropertySingleLineFont(weekText, 100, null, null, weekWidth, weekHeight);
     ctx.font = weekFont.font;
     ctx.fillRect(weekX, weekY, weekWidth, weekHeight);
     ctx.fillStyle = '#ffffff';
@@ -246,6 +276,8 @@ function drawChanges(width, height, key, showText){
 
     ctx.strokeStyle = '#000000';
     ctx.beginPath();
+
+    initContext2d(ctx);
 
     let numberDatas = [];
 
@@ -290,7 +322,8 @@ function drawChanges(width, height, key, showText){
 
         if (showText) {
             let text = showText(numberDatas[numberDatas.length - 1], Math.min(...numberDatas), Math.max(...numberDatas))
-            ctx.font = 'bold 20px serif';
+            let textFont = ctx.getPropertySingleLineFont(text, null, null, null, width - 8, height / 4);
+            ctx.font = textFont.font;
             ctx.textBaseline = 'bottom';
             ctx.fillStyle = '#ffffff';
             ctx.fillText(text, 6, height - 6);
@@ -348,7 +381,7 @@ function drawWeatherForecast(width, height){
             let tmpY = index * rowHeight;
             let tmpWidth = width - tmpX;
             let tmpHeight = labelHeight;
-            let tmpFont = ctx.getPropertySingleLineFont(tmpText, null, null, null, tmpWidth - 16, tmpHeight - 16);
+            let tmpFont = ctx.getPropertySingleLineFont(tmpText, null, null, null, tmpWidth - 8, tmpHeight - 8);
             ctx.font = tmpFont.font;
             ctx.fillText(tmpText, tmpX + tmpWidth / 2, tmpY + tmpHeight / 2 + tmpFont.offsetY);
 
@@ -357,7 +390,7 @@ function drawWeatherForecast(width, height){
             let condY = index * rowHeight + tmpHeight;
             let condWidth = width;
             let condHeight = labelHeight;
-            let condFont = ctx.getPropertySingleLineFont(condText, null, null, null, condWidth - 16, condHeight - 16);
+            let condFont = ctx.getPropertySingleLineFont(condText, null, null, null, condWidth - 8, condHeight - 8);
             ctx.font = condFont.font;
             ctx.fillText(condText, condX + condWidth / 2, condY + condHeight / 2 + condFont.offsetY);
 
@@ -366,7 +399,7 @@ function drawWeatherForecast(width, height){
             let sunY = index * rowHeight + tmpHeight + condHeight;
             let sunWidth = width;
             let sunHeight = labelHeight;
-            let sunFont = ctx.getPropertySingleLineFont(sunText, null, null, null, sunWidth - 16, sunHeight - 16);
+            let sunFont = ctx.getPropertySingleLineFont(sunText, null, null, null, sunWidth - 8, sunHeight - 8);
             ctx.font = sunFont.font;
             ctx.fillText(sunText, sunX + sunWidth / 2, sunY + sunHeight / 2 + sunFont.offsetY);
         });
@@ -415,7 +448,7 @@ function initContext2d(ctx){
     ctx.getPropertySingleLineFont = function (text, max, min, font, width, height) {
         font = font || 'Impact'
         max = max || 40;
-        min = min || 12;
+        min = min || 6;
         var lastFont = this.font;
         var fontSize = max;
         this.font = fontSize + 'px ' + font;
