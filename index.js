@@ -129,6 +129,7 @@ app.get('/calendar', function (req, res) {
     let width  = 600;
     let height = 384;
     let redLayer = req.query.red && parseInt(req.query.red) > 0;
+    let blackLayer = req.query.black && parseInt(req.query.black) > 0;
     if (req.query.width && req.query.width > 0) {
         width = parseInt(req.query.width);
     }
@@ -142,8 +143,11 @@ app.get('/calendar', function (req, res) {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, width, height);
 
-    let cvsCalendar = drawCalendar(Math.floor(width / 3 * 2), Math.floor(height / 4 * 3));
-    ctx.drawImage(cvsCalendar, Math.floor(width / 3), 0);
+    if (!blackLayer) {
+        let cvsCalendar = drawCalendar(Math.floor(width / 3 * 2), Math.floor(height / 4 * 3));
+        ctx.drawImage(cvsCalendar, Math.floor(width / 3), 0);
+    }
+    
     if (!redLayer) {
         let cvsTemps = drawChanges(width, Math.floor(height / 4), config.tempKey, function (cur, min, max) {
             return '温度：' + (cur / 1000).toFixed(1) + '℃，过去24小时：' + (min / 1000).toFixed(1) + ' - ' + (max / 1000).toFixed(1) + '℃';
