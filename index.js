@@ -566,19 +566,24 @@ function quickBackup(){
 }
 
 function reportTemp () {
-    let timeStart = new Date().getTime();
-    let fileContent = fs.readFileSync(w1DeviceFile).toString();
-    let temp = fileContent.match(/t=(\d+)/)[1];
-    console.log('Temp reading cost: ' + (new Date().getTime() - timeStart) + 'ms');
-    timeStart = new Date().getTime();
-    console.log('Temp read at ' + new Date().toString())
-    valuesMap[config.tempKey] = {
-        value: parseInt(temp),
-        updated: (new Date()).getTime()
-    };
-    process.nextTick(function () {
-        addChange(config.tempKey);
-    });
+    // DS18B20 may lost connect
+    if(fs.exists(w1DeviceFile)){
+        let timeStart = new Date().getTime();
+        let fileContent = fs.readFileSync(w1DeviceFile).toString();
+        let temp = fileContent.match(/t=(\d+)/)[1];
+        console.log('Temp reading cost: ' + (new Date().getTime() - timeStart) + 'ms');
+        timeStart = new Date().getTime();
+        console.log('Temp read at ' + new Date().toString() + ', value: ' + temp);
+        valuesMap[config.tempKey] = {
+            value: parseInt(temp),
+            updated: (new Date()).getTime()
+        };
+        process.nextTick(function () {
+            addChange(config.tempKey);
+        });
+    }else{
+        console.log('Temp read failed at ' + new Date().toString())
+    }
     setTimeout(reportTemp, 10000);
 }
 
