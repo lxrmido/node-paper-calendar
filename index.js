@@ -567,7 +567,7 @@ function quickBackup(){
 
 function reportTemp () {
     // DS18B20 may lost connect
-    if(fs.exists(w1DeviceFile)){
+    if(fs.existsSync(w1DeviceFile)){
         let timeStart = new Date().getTime();
         let fileContent = fs.readFileSync(w1DeviceFile).toString();
         let temp = fileContent.match(/t=(\d+)/)[1];
