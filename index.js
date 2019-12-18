@@ -539,7 +539,7 @@ function backupDaily(){
         fs.mkdirSync(daily.dir);
     }
     for (let key in daily.changes) {
-        fs.writeFileSync(daily.dir + key + '.json', JSON.stringify(daily.changes[key]));
+        fs.writeFileSync(daily.dir + '/' + key + '.json', JSON.stringify(daily.changes[key]));
     }
 }
 
