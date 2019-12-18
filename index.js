@@ -7,6 +7,7 @@ var canvas = require('canvas');
 var solarLunar = require('solarlunar');
 var request = require('request')
 var bmp = require('fast-bmp');
+var path = require('path');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -73,6 +74,10 @@ if (fs.existsSync(config.backupChangesFile)) {
 }
 
 initRotate();
+
+app.get('/', function (req, res) {
+    res.sendFile(path.join(__dirname + '/index.html'));
+});
 
 app.post('/set', function (req, res) {
     for (let i in req.body) {

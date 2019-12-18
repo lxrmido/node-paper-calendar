@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Calendar</title>
+    <style type="text/css">
+        body {
+            margin:0;
+            padding:0;
+        }
+        .frm {
+            margin:0;
+            position:fixed;
+            left:50%;
+            top:50%;
+        }
+        img {
+            margin:0;
+            position:absolute;
+            left:0;
+            top:0;
+            width:100%;
+            height:100%;
+            display:block;
+            border:none;
+        }
+	.frm.rotate {
+        transform: rotate(90deg);
+        -webkit-transform: rotate(90deg);
+	}
+    </style>
+</head>
+<body>
+    <div id="frm" class="frm"></div>
+</body>
+    <script type="text/javascript">
+        function getQuery () {
+            var q = {};
+            var s = document.location.href.split('?');
+            if (s.length < 2) {
+                return {};
+            }
+            s = s[1].split('&');
+            var i, k, t;
+            for (i = 0; i < s.length; i ++) {
+                t = s[i].split('=');
+                if (t.length === 2) {
+                    q[t[0]] = t[1];
+                }
+            }
+            return q;
+        }
+        function refresh(){
+            var imgElement = document.getElementById('frm');
+            var srcUrl = '/calendar?t=' + Math.random();
+            var query = getQuery();
+            var width = document.documentElement.clientWidth;
+            var height = document.documentElement.clientHeight;
+            if (width < height) {
+                query.width = height;
+                query.height = width;
+                imgElement.className = 'frm rotate';
+                imgElement.style.marginLeft = '-' + parseInt(height / 2) + 'px';
+                imgElement.style.marginTop = '-' + parseInt(width / 2) + 'px';
+                imgElement.style.width = height + 'px';
+                imgElement.style.height = width + 'px';
+            } else {
+                query.width = width;
+                query.height = height;
+                imgElement.className = 'frm';
+                imgElement.style.marginLeft = '-' + parseInt(width / 2) + 'px';
+                imgElement.style.marginTop = '-' + parseInt(height / 2) + 'px';
+                imgElement.style.width = width + 'px';
+                imgElement.style.height = height + 'px';
+            }
+            var k;
+            for (k in query) {
+                srcUrl += '&' + k + '=' + query[k];
+            }
+            var img = new Image();
+            img.onload = function () {
+            imgElement.innerHTML = '';
+            imgElement.appendChild(img);
+                setTimeout(function(){
+                    refresh();
+                }, ('interval' in query) ? parseInt(query.interval) : 1800000);
+            };
+            img.onerror = function () {
+                setTimeout(function(){
+                    refresh();
+                }, 3000);
+            };
+            img.src = srcUrl;
+        }
+        refresh();
+        // 每半天刷新一次页面，避免设备浏览器内存占用过大
+        setTimeout(function(){
+            document.location.reload();
+        }, 3600000 * 12)
+    </script>
+</html>
