@@ -5,7 +5,7 @@ var fs = require('fs');
 var app = express();
 var canvas = require('canvas');
 var solarLunar = require('solarlunar');
-var request = require('request')
+const axios = require('axios');
 var bmp = require('fast-bmp');
 var path = require('path');
 
@@ -147,7 +147,7 @@ app.get('/calendar', function (req, res) {
     if (req.query.tempKey) {
         tempKey = req.query.tempKey;
     }
-    
+
     let cvs = canvas.createCanvas(width, height);
     let ctx = cvs.getContext('2d');
 
@@ -188,12 +188,12 @@ app.get('/calendar', function (req, res) {
         });
         ctx.drawImage(cvsTemps, tempX, tempY);
     }
-    
+
     if (!hideWeather) {
         let cvsForecast = drawWeatherForecast(weatherWidth, weatherHeight);
         ctx.drawImage(cvsForecast, weatherX, weatherY);
     }
-    
+
     var mime, img;
 
     if (bit) {
@@ -208,7 +208,7 @@ app.get('/calendar', function (req, res) {
         'Content-Type': mime,
         'Content-Length': img.length
     });
-    res.end(img); 
+    res.end(img);
 });
 
 function drawCalendar(width, height){
@@ -221,7 +221,7 @@ function drawCalendar(width, height){
 
     initContext2d(ctx);
 
-    ctx.textAlign = 'center'; 
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     let date = new Date();
     let dayX = 0;
@@ -313,7 +313,7 @@ function drawChanges(width, height, key, showText){
         }
         let minValue = Math.min(...calcValues);
         let maxValue = Math.max(...calcValues);
-        
+
         if (minValue == maxValue) {
             ctx.moveTo(0, Math.floor(height / 2));
             ctx.lineTo(width - 1, Math.floor(height / 2));
@@ -361,8 +361,8 @@ function drawWeatherForecast(width, height){
     let rowHeight = Math.floor(height / 3);
     let labelHeight = Math.floor(rowHeight / 3);
     let labelWidth = labelHeight * 2;
-    
-    ctx.textAlign = 'center'; 
+
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
     let labelFont = ctx.getPropertySingleLineFont('今天', null, null, null, labelWidth, labelHeight);
@@ -381,7 +381,7 @@ function drawWeatherForecast(width, height){
 
     if (weatherData.length) {
         weatherData.forEach(function (day, index) {
-            let tmpText = day.tmp_min + ' ~ ' + day.tmp_max + '℃';
+            let tmpText = day.tempMin + ' ~ ' + day.tempMax + '℃';
             let tmpX = labelWidth;
             let tmpY = index * rowHeight;
             let tmpWidth = width - tmpX;
@@ -390,7 +390,7 @@ function drawWeatherForecast(width, height){
             ctx.font = tmpFont.font;
             ctx.fillText(tmpText, tmpX + tmpWidth / 2, tmpY + tmpHeight / 2 + tmpFont.offsetY);
 
-            let condText = day.cond_txt_d + ' / ' + day.cond_txt_n;
+            let condText = day.textDay + ' / ' + day.textNight;
             let condX = 0;
             let condY = index * rowHeight + tmpHeight;
             let condWidth = width;
@@ -399,7 +399,7 @@ function drawWeatherForecast(width, height){
             ctx.font = condFont.font;
             ctx.fillText(condText, condX + condWidth / 2, condY + condHeight / 2 + condFont.offsetY);
 
-            let sunText = '日出 ' + day.sr + ' 日落 ' + day.ss;
+            let sunText = '日出 ' + day.sunrise + ' 日落 ' + day.sunset;
             let sunX = 0;
             let sunY = index * rowHeight + tmpHeight + condHeight;
             let sunWidth = width;
@@ -423,30 +423,25 @@ function getWeatherForecastData(){
         console.log('No Weather Key');
         return;
     }
-    let url = 'https://free-api.heweather.net/s6/weather/forecast?location=' + config.weatherLocation + '&key=' + config.weatherKey;
+    let url = 'https://devapi.qweather.com/v7/weather/3d?location=' + config.weatherLocation + '&key=' + config.weatherKey;
 
-    request.get(url, function (err, data) {
+    axios.get(url)
+      .then(function (res) {
         console.log(new Date().toString())
-        if (err) {
-            console.log('Get Weather Data Failed:' + err);
-            setTimeout(getWeatherForecastData, 60000);
-            return;
+        let fcData = res.data;
+        if (fcData.daily && fcData.daily.length) {
+            weatherData = fcData.daily;
+            console.log('Weather data refreshed.');
+        } else {
+            console.log('Weather data format unexpected.');
+            console.log(res.data);
         }
-        try {
-            let fcData = JSON.parse(data.body);
-            if (fcData.HeWeather6 && fcData.HeWeather6.length && fcData.HeWeather6[0].daily_forecast) {
-                weatherData = fcData.HeWeather6[0].daily_forecast;
-                console.log('Weather data refreshed.');
-            } else {
-                console.log('Weather data format unexpected.');
-                console.log(data.body);
-            }
-        } catch(e) {
-            console.log('Weather data parsing error.');
-            console.log(data.body);
-        }
-        setTimeout(getWeatherForecastData, 900000);        
-    })
+        setTimeout(getWeatherForecastData, 900000);
+      })
+      .catch(function (error) {
+        // handle error
+        console.log(error);
+      })
 }
 
 function initContext2d(ctx){
@@ -550,8 +545,8 @@ function backupRuntime(){
 
 function quickBackup(){
     fs.writeFile(
-        config.backupValuesFile, 
-        JSON.stringify(valuesMap), 
+        config.backupValuesFile,
+        JSON.stringify(valuesMap),
         function (err1) {
             if (err1) {
                 console.log('Backup values failed:' + err1);
@@ -564,7 +559,7 @@ function quickBackup(){
                         console.log('Backup values failed:' + err2);
                     }
                     setTimeout(quickBackup, config.backupInterval);
-                } 
+                }
             )
         }
     );

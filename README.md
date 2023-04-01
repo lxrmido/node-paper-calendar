@@ -42,7 +42,8 @@ NODE_TLS_REJECT_UNAUTHORIZED=0
 # 服务监听端口
 SERIVCE_PORT=3000
 # 天气预报的城市或者地区
-WEATHER_LOCATION=guangzhou
+# https://dev.qweather.com/docs/api/geoapi/city-lookup/ 通过这里的文档调api获取locationId
+WEATHER_LOCATION=101020600
 # 和风天气的key
 WEATHER_KEY=
 ```
